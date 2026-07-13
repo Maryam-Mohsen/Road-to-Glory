@@ -21,7 +21,15 @@ const register = async (req, res, next) => {
       return res.status(409).json({ message: 'An account with this email already exists.' });
     }
 
-    const user = await User.create({ name, email, password, phone, role: allowedRole });
+const user = await User.create({
+  name,
+  email,
+  password,
+  phone,
+  role: allowedRole,
+  organizerStatus:
+    allowedRole === 'organizer' ? 'approved' : 'not_applicable',
+});
     const token = signToken(user);
 
     res.status(201).json({ token, user: user.toSafeObject() });

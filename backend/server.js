@@ -9,9 +9,10 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const reservationRoutes = require('./routes/reservationRoutes');
-const attendanceRoutes = require('./routes/attendanceRoutes');
+// const attendanceRoutes = require('./routes/attendanceRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 connectDB();
 
@@ -25,9 +26,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/reservations', reservationRoutes);
-app.use('/api/attendance', attendanceRoutes);
+// app.use('/api/attendance', attendanceRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'Road to Glory API is running' }));
 

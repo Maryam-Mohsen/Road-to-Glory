@@ -1,5 +1,6 @@
 
-if (getToken()) window.location.href = 'events.html';
+// if (getToken()) window.location.href = 'events.html';
+if (getToken()) window.location.href = 'home.html';
 
 const tabLogin = document.getElementById('tab-login');
 const tabRegister = document.getElementById('tab-register');
@@ -38,7 +39,8 @@ loginForm.addEventListener('submit', async (e) => {
       },
     });
     setSession(data.token, data.user);
-    window.location.href = 'events.html';
+    // window.location.href = 'events.html';
+    window.location.href = 'home.html';
   } catch (err) {
     showMsg(err.message, 'error');
   }
@@ -58,7 +60,8 @@ registerForm.addEventListener('submit', async (e) => {
     });
     setSession(data.token, data.user);
     showMsg('Account created! Redirecting...', 'success');
-    setTimeout(() => (window.location.href = 'events.html'), 800);
+    // setTimeout(() => (window.location.href = 'events.html'), 800);
+    setTimeout(() => (window.location.href = 'home.html'), 800);
   } catch (err) {
     showMsg(err.message, 'error');
   }

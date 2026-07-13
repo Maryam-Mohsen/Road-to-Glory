@@ -1,4 +1,7 @@
 const user = requireAuth();
+
+document.getElementById('username').textContent = user.name;
+
 const msg = document.getElementById('msg');
 document.getElementById('welcome').textContent = `Welcome, ${user.name}`;
 
@@ -15,6 +18,16 @@ if (user.role === 'admin') initAdmin();
 async function initAttendee() {
   document.getElementById('attendee-section').classList.remove('hidden');
   try {
+        const { notifications } = await api('/notifications');
+
+    document.getElementById('notifications-list').innerHTML = notifications.length ? notifications.map(n => `
+            <div class="event-card" style="margin-bottom:10px;">
+              <h4>${n.title}</h4>
+              <p>${n.message}</p>
+              <small>${new Date(n.createdAt).toLocaleString()}</small>
+            </div>
+          `).join('')
+        : '<p>No notifications.</p>';
     const { reservations } = await api('/reservations/my');
     document.getElementById('tickets-list').innerHTML = reservations
       .map(
@@ -66,17 +79,21 @@ async function leaveFeedback(eventId) {
 async function initOrganizer() {
   document.getElementById('organizer-section').classList.remove('hidden');
   try {
-    const { events } = await api('/events');
-    const mine = events.filter((e) => e.organizer?._id === user._id || e.organizer === user._id);
+    const { events: mine } = await api('/events/my-events');
     const rows = await Promise.all(
       mine.map(async (ev) => {
         const report = await api(`/reports/event/${ev._id}`).catch(() => null);
         return `
         <div class="event-card" style="margin-bottom:14px;">
           <span class="cat">${ev.category}</span>
+          <span class="pill">${ev.status}</span>
           <h3>${ev.title}</h3>
           <div class="meta">📍 ${ev.location} · 🗓 ${new Date(ev.date).toLocaleString()}</div>
           <div class="seats"><b>${ev.reservedCount}</b> / ${ev.capacity} reserved</div>
+          <div style="margin-top:12px;">
+            <button onclick="window.location.href='edit-event.html?id=${ev._id}'">Edit</button>  
+            <button class="btn-outline" onclick="deleteEvent('${ev._id}')">Delete</button>
+          </div>
           ${
             report
               ? `<div class="stat-row" style="margin-top:10px;">
@@ -96,18 +113,51 @@ async function initOrganizer() {
   }
 }
 
-async function validateTicket() {
-  const code = document.getElementById('ticket-code').value.trim();
-  const box = document.getElementById('validate-msg');
-  if (!code) return;
+async function editEvent(id) {
+  const title = prompt('Event title:');
+  if (!title) return;
+
+  const description = prompt('Description:');
+  const category = prompt('Category:');
+  const location = prompt('Location:');
+  const date = prompt('Date (YYYY-MM-DD):');
+  const capacity = prompt('Capacity:');
+
   try {
-    const data = await api('/attendance/validate', { method: 'POST', body: { ticketCode: code } });
-    showMsg(box, data.message, 'success');
-    document.getElementById('ticket-code').value = '';
+    await api(`/events/${id}`, {
+      method: 'PUT',
+      body: {
+        title,
+        description,
+        category,
+        location,
+        date,
+        capacity: Number(capacity),
+      },
+    });
+
+    showMsg(msg, 'Event updated and sent for admin review.', 'success');
+    initOrganizer();
   } catch (err) {
-    showMsg(box, err.message, 'error');
+    showMsg(msg, err.message, 'error');
   }
 }
+
+async function deleteEvent(id) {
+  if (!confirm('Are you sure you want to delete this event?')) return;
+
+  try {
+    await api(`/events/${id}`, {
+      method: 'DELETE',
+    });
+
+    showMsg(msg, 'Event deleted successfully.', 'success');
+    initOrganizer();
+  } catch (err) {
+    showMsg(msg, err.message, 'error');
+  }
+}
+
 
 // ---------- ADMIN ----------
 async function initAdmin() {
@@ -121,27 +171,7 @@ async function initAdmin() {
       <div class="stat"><div class="num">${overview.totalAttendance}</div><div class="label">Check-ins</div></div>
     `;
 
-    const { users: organizers } = await api('/users?role=organizer');
-    const orgTbody = document.querySelector('#organizer-requests-table tbody');
-    orgTbody.innerHTML =
-      organizers
-        .map(
-          (u) => `
-      <tr>
-        <td>${u.name}</td>
-        <td>${u.email}</td>
-        <td><span class="pill">${u.organizerStatus}</span></td>
-        <td>
-          ${
-            u.organizerStatus === 'pending'
-              ? `<button onclick="reviewOrganizer('${u._id}','approved')">Approve</button>
-                 <button class="btn-outline" onclick="reviewOrganizer('${u._id}','rejected')">Reject</button>`
-              : '—'
-          }
-        </td>
-      </tr>`
-        )
-        .join('') || '<tr><td colspan="4">No organizer requests yet.</td></tr>';
+  
 
     await loadAllUsers();
   } catch (err) {
@@ -149,15 +179,6 @@ async function initAdmin() {
   }
 }
 
-async function reviewOrganizer(id, decision) {
-  try {
-    await api(`/users/${id}/review-organizer`, { method: 'PUT', body: { decision } });
-    showMsg(msg, `Organizer ${decision}.`, 'success');
-    initAdmin();
-  } catch (err) {
-    showMsg(msg, err.message, 'error');
-  }
-}
 
 async function loadAllUsers() {
   const { users } = await api('/users');

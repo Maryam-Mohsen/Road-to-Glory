@@ -10,37 +10,53 @@
 </head>
 <body>
 
-<div class="topbar">
+<nav class="topbar">
   <div class="brand">ROAD TO <span>GLORY</span></div>
+
   <div class="nav-links">
+    <a href="home.html">Home</a>
     <a href="events.html">Events</a>
     <a href="dashboard.html" class="active">Dashboard</a>
     <a href="#" onclick="logout()">Sign Out</a>
   </div>
-</div>
+
+  <div class="user-box">
+    <span class="user-icon">👤</span>
+    <span id="username">User</span>
+  </div>
+</nav>
 
 <div class="container">
-  <h1 id="welcome"></h1>
-  <div id="msg"></div>
+  <div class="dashboard-header">
+
+  <div>
+    <h1 id="welcome"></h1>
+    <p>Your football journey starts here ⚽</p>
+  </div>
+
+  <div class="dashboard-badge">
+    🏆 Road To Glory
+  </div>
+
+</div>
+
+<div id="msg"></div>
 
   <!-- ATTENDEE -->
-  <section id="attendee-section" class="hidden">
-    <h2>My Digital Tickets</h2>
-    <div id="tickets-list"></div>
-  </section>
+<section id="attendee-section" class="hidden">
+
+  <h2>Notifications</h2>
+  <div id="notifications-list"></div>
+
+  <h2 style="margin-top: 30px;">My Digital Tickets</h2>
+  <div id="tickets-list"></div>
+
+</section>
 
   <!-- ORGANIZER -->
   <section id="organizer-section" class="hidden">
     <h2>My Events</h2>
     <div id="organizer-events"></div>
-
-    <h2>Validate a Ticket</h2>
-    <div class="card" style="max-width:420px;">
-      <label>Ticket Code</label>
-      <input type="text" id="ticket-code" placeholder="RTG-XXXXXXXXXX">
-      <button style="margin-top:14px;" onclick="validateTicket()">Check In Attendee</button>
-      <div id="validate-msg"></div>
-    </div>
   </section>
 
   <!-- ADMIN -->
@@ -48,11 +64,6 @@
     <h2>Platform Overview</h2>
     <div class="stat-row" id="overview-stats"></div>
 
-    <h2>Organizer Approval Requests</h2>
-    <table id="organizer-requests-table">
-      <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-      <tbody></tbody>
-    </table>
 
     <h2>Manage Users</h2>
     <table id="users-table">
@@ -64,5 +75,6 @@
 
 <script src="js/api.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/navbar.js"></script>
 </body>
 </html>

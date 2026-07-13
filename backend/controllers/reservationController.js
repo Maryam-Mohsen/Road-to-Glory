@@ -11,19 +11,19 @@ const createReservation = async (req, res, next) => {
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ message: 'Event not found.' });
 
-    if (event.status !== 'upcoming' && event.status !== 'ongoing') {
+    if (event.status !== 'approved') {
       return res.status(400).json({ message: 'This event is not open for reservations.' });
     }
 
     const claimed = await Event.findOneAndUpdate(
-      {
-        _id: eventId,
-        status: { $in: ['upcoming', 'ongoing'] },
-        $expr: { $lt: ['$reservedCount', '$capacity'] },
-      },
-      { $inc: { reservedCount: 1 } },
-      { new: true }
-    );
+  {
+    _id: eventId,
+    status: 'approved',
+    $expr: { $lt: ['$reservedCount', '$capacity'] },
+  },
+  { $inc: { reservedCount: 1 } },
+  { new: true }
+);
 
     if (!claimed) {
       return res.status(409).json({ message: 'This event is fully booked.' });
@@ -73,6 +73,7 @@ const getEventReservations = async (req, res, next) => {
 };
 
 const cancelReservation = async (req, res, next) => {
+  // console.log("cancelReservation called");
   try {
     const reservation = await Reservation.findById(req.params.id);
     if (!reservation) return res.status(404).json({ message: 'Reservation not found.' });
@@ -86,8 +87,10 @@ const cancelReservation = async (req, res, next) => {
       return res.status(400).json({ message: 'Reservation is already cancelled.' });
     }
 
-    reservation.status = 'cancelled';
-    await reservation.save();
+    // await Reservation.findByIdAndDelete(reservation._id);
+    const deleted = await Reservation.findByIdAndDelete(reservation._id);
+// console.log(deleted);
+    // console.log("Deleted:", reservation._id);
 
     // Free up the seat this reservation was holding
     await Event.findByIdAndUpdate(reservation.event, { $inc: { reservedCount: -1 } });

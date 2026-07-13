@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Event</title>
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+
+  <nav class="topbar">
+  <div class="brand">ROAD TO <span>GLORY</span></div>
+
+  <div class="nav-links">
+    <a href="home.html">Home</a>
+    <a href="events.html">Events</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="#" onclick="logout()">Sign Out</a>
+  </div>
+
+  <div class="user-box">
+    <span class="user-icon">👤</span>
+    <span id="username">User</span>
+  </div>
+</nav>
+
+  <div class="container">
+
+  <div class="edit-header">
+    <h1>Edit Event</h1>
+    <p>Update your match details and keep the event ready for fans ⚽</p>
+  </div>
+
+  <div class="card edit-card">
+
+    <form id="edit-form">
+
+      <label>Event Title</label>
+      <input id="title" placeholder="Title">
+
+      <label>Description</label>
+      <textarea id="description" placeholder="Description"></textarea>
+
+      <label>Category</label>
+      <input id="category" placeholder="Category">
+
+      <label>Location</label>
+      <input id="location" placeholder="Location">
+
+      <label>Date & Time</label>
+      <input id="date" type="datetime-local">
+
+      <label>Capacity</label>
+      <input id="capacity" type="number" placeholder="Capacity">
+
+      <button type="submit">⚽ Save Changes</button>
+
+    </form>
+
+  </div>
+
+</div>
+
+  <div id="msg"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/edit-event.js"></script>
+  <script src="js/navbar.js"></script> 
+</body>
+</html>

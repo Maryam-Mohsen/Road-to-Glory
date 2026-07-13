@@ -8,12 +8,8 @@ function showMsg(el, text, type) {
 }
 
 
-if (user.role === 'organizer' && user.organizerStatus === 'approved') {
+if (user.role === 'organizer') {
   document.getElementById('create-event-card').classList.remove('hidden');
-} else if (user.role === 'organizer') {
-  document.getElementById('create-event-card').classList.remove('hidden');
-  document.getElementById('create-event-card').innerHTML =
-    '<div class="msg error">Your organizer account is pending admin approval. You cannot publish events yet.</div>';
 }
 
 async function loadEvents() {
@@ -32,17 +28,35 @@ async function loadEvents() {
           <p>${ev.description}</p>
           <div class="seats"><b>${ev.availableSeats}</b> / ${ev.capacity} seats available</div>
           ${
-            user.role === 'attendee'
-              ? `<button ${full ? 'disabled' : ''} onclick="book('${ev._id}')">${full ? 'Fully Booked' : 'Reserve Ticket'}</button>`
-              : `<span class="pill">Organized by ${ev.organizer?.name || 'N/A'}</span>`
-          }
+              user.role === 'attendee'
+                ? `<button ${full ? 'disabled' : ''} onclick="book('${ev._id}')">${full ? 'Fully Booked' : 'Reserve Ticket'}</button>`
+                : `<span class="pill">Organized by ${ev.organizer?.name || 'N/A'}</span>`
+            }
           ${
-            user.role === 'admin'
-              ? `<div style="margin-top:12px;">
-                   <button onclick="deleteEvent('${ev._id}')">Delete Event</button>
-                 </div>`
+  user.role === 'admin'
+    ? `<div style="margin-top:12px;">
+        ${
+  ev.status === 'pending'
+    ? `
+        <button onclick="reviewEvent('${ev._id}','approved')">Approve</button>
+        <button onclick="reviewEvent('${ev._id}','rejected')">Reject</button>
+      `
+    : ev.status === 'approved'
+    ? `
+        <button onclick="reviewEvent('${ev._id}','rejected')">Reject</button>
+      `
+    : `
+        <button onclick="reviewEvent('${ev._id}','approved')">Approve</button>
+      `
+}
+        ${
+            ev.status === 'rejected'
+              ? `<button onclick="deleteEvent('${ev._id}')">Delete Event</button>`
               : ''
-          }
+        }     
+        </div>`
+    : ''
+}
           <div style="margin-top:14px; border-top:1px solid var(--line); padding-top:10px;">
             <span class="pill" style="cursor:pointer;" onclick="toggleFeedback('${ev._id}')">💬 View Feedback</span>
             <div id="feedback-${ev._id}" class="hidden" style="margin-top:10px;"></div>
@@ -67,6 +81,19 @@ async function deleteEvent(eventId) {
   }
 }
 
+async function reviewEvent(eventId, decision) {
+  try {
+    await api(`/events/${eventId}/review`, {
+      method: 'PATCH',
+      body: { decision },
+    });
+
+    showMsg(msg, `Event ${decision} successfully.`, 'success');
+    loadEvents();
+  } catch (err) {
+    showMsg(msg, err.message, 'error');
+  }
+}
 
 async function toggleFeedback(eventId) {
   const box = document.getElementById(`feedback-${eventId}`);
@@ -120,8 +147,7 @@ if (createForm) {
           capacity: Number(document.getElementById('ev-capacity').value),
         },
       });
-      showMsg(createMsg, 'Event published!', 'success');
-      createForm.reset();
+      showMsg(createMsg, 'Event request submitted. Waiting for admin approval.', 'success');      createForm.reset();
       loadEvents();
     } catch (err) {
       showMsg(createMsg, err.message, 'error');

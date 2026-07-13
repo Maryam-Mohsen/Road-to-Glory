@@ -22,10 +22,10 @@ const eventSchema = new mongoose.Schema(
     capacity: { type: Number, required: true, min: 1 },
     reservedCount: { type: Number, default: 0 },
     status: {
-      type: String,
-      enum: ['upcoming', 'ongoing', 'completed', 'cancelled'],
-      default: 'upcoming',
-    },
+  type: String,
+  enum: ['pending', 'approved', 'rejected', 'ongoing', 'completed', 'cancelled'],
+  default: 'pending',
+},
   },
   { timestamps: true }
 );
