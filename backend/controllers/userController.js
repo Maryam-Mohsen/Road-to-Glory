@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Event = require('../models/Event');
+const createAuditLog = require('../utils/createAuditLog');
 
 const updateMe = async (req, res, next) => {
   try {
@@ -41,6 +42,15 @@ const reviewOrganizer = async (req, res, next) => {
 
     user.organizerStatus = decision;
     await user.save();
+
+    await createAuditLog(
+      req.user._id,
+      decision === 'approved' ? 'organizer_approved' : 'organizer_rejected',
+      'User',
+      user._id,
+      `Organizer request for "${user.name}" (${user.email}) was ${decision}.`
+    );
+
     res.json({ user: user.toSafeObject() });
   } catch (err) {
     next(err);
@@ -60,6 +70,15 @@ const setUserActive = async (req, res, next) => {
 
     user.isActive = !!isActive;
     await user.save();
+
+    await createAuditLog(
+      req.user._id,
+      isActive ? 'user_activated' : 'user_deactivated',
+      'User',
+      user._id,
+      `Account "${user.name}" (${user.email}) was ${isActive ? 'activated' : 'deactivated'}.`
+    );
+
     res.json({ user: user.toSafeObject() });
   } catch (err) {
     next(err);
@@ -76,6 +95,15 @@ const deleteOrganizer = async (req, res, next) => {
     }
 
     await Event.deleteMany({ organizer: target._id });
+
+    await createAuditLog(
+      req.user._id,
+      'organizer_deleted',
+      'User',
+      target._id,
+      `Organizer account "${target.name}" (${target.email}) and their events were deleted.`
+    );
+
     await target.deleteOne();
 
     res.json({ message: 'Organizer account and their events were deleted.' });

@@ -75,6 +75,24 @@ async function leaveFeedback(eventId) {
   }
 }
 
+async function checkInTicket(eventId) {
+  const input = document.getElementById(`ticket-input-${eventId}`);
+  const ticketCode = input.value.trim();
+  if (!ticketCode) {
+    showMsg(msg, 'Please enter a ticket code first.', 'error');
+    return;
+  }
+
+  try {
+    await api('/attendance/validate', { method: 'POST', body: { ticketCode } });
+    showMsg(msg, 'Ticket validated. Attendee checked in.', 'success');
+    input.value = '';
+    initOrganizer();
+  } catch (err) {
+    showMsg(msg, err.message, 'error');
+  }
+}
+
 // ---------- ORGANIZER ----------
 async function initOrganizer() {
   document.getElementById('organizer-section').classList.remove('hidden');
@@ -99,10 +117,16 @@ async function initOrganizer() {
               ? `<div class="stat-row" style="margin-top:10px;">
                   <div class="stat"><div class="num">${report.attendanceCount}</div><div class="label">Checked In</div></div>
                   <div class="stat"><div class="num">${report.attendanceRate}%</div><div class="label">Attendance Rate</div></div>
+                  <div class="stat"><div class="num">${ev.reservedCount}</div><div class="label">Reserved</div></div>
+                  <div class="stat"><div class="num">${ev.capacity > 0 ? Math.round((ev.reservedCount / ev.capacity) * 1000) / 10 : 0}%</div><div class="label">Reserved Rate</div></div>
                   <div class="stat"><div class="num">${report.averageRating ?? '—'}</div><div class="label">Avg Rating</div></div>
                 </div>`
               : ''
           }
+          <div class="checkin-row">
+            <input id="ticket-input-${ev._id}" type="text" placeholder="Ticket code e.g. RTG-XXXXXXXXXX" />
+            <button onclick="checkInTicket('${ev._id}')">Check-in</button>
+          </div>
         </div>`;
       })
     );
@@ -174,9 +198,27 @@ async function initAdmin() {
   
 
     await loadAllUsers();
+    await loadAuditLogs();
   } catch (err) {
     showMsg(msg, err.message, 'error');
   }
+}
+
+async function loadAuditLogs() {
+  const { logs } = await api('/audit-logs');
+  const container = document.getElementById('audit-log-list');
+  container.innerHTML = logs.length
+    ? logs
+        .map(
+          (log) => `
+      <div class="event-card" style="margin-bottom:10px; padding:14px;">
+        <div class="meta">${new Date(log.createdAt).toLocaleString()} · by ${log.admin?.name || 'Unknown'}</div>
+        <div><span class="pill">${log.action.replace(/_/g, ' ')}</span></div>
+        <div style="margin-top:6px;">${log.details || ''}</div>
+      </div>`
+        )
+        .join('')
+    : '<p>No administrative actions recorded yet.</p>';
 }
 
 
@@ -226,6 +268,7 @@ async function reviewOrganizer(id, decision) {
     await api(`/users/${id}/review-organizer`, { method: 'PUT', body: { decision } });
     showMsg(msg, `Organizer ${decision}.`, 'success');
     loadAllUsers();
+    loadAuditLogs();
   } catch (err) {
     showMsg(msg, err.message, 'error');
   }
@@ -236,6 +279,7 @@ async function setUserActive(id, isActive) {
     await api(`/users/${id}/status`, { method: 'PUT', body: { isActive } });
     showMsg(msg, `Account ${isActive ? 'activated' : 'deactivated'}.`, 'success');
     loadAllUsers();
+    loadAuditLogs();
   } catch (err) {
     showMsg(msg, err.message, 'error');
   }
@@ -247,6 +291,7 @@ async function deleteOrganizer(id) {
     await api(`/users/${id}`, { method: 'DELETE' });
     showMsg(msg, 'Organizer account deleted.', 'success');
     loadAllUsers();
+    loadAuditLogs();
   } catch (err) {
     showMsg(msg, err.message, 'error');
   }

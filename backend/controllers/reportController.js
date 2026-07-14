@@ -46,8 +46,8 @@ const getEventReport = async (req, res, next) => {
     ]);
 
 
-    const attendanceCount = reservationCount;
-    const attendanceRate = event.capacity > 0 ? (attendanceCount / event.capacity) * 100 : 0;
+    const attendanceCount = await Attendance.countDocuments({ event: eventId });
+    const attendanceRate = reservationCount > 0 ? (attendanceCount / reservationCount) * 100 : 0;
 
     res.json({
       event: { id: event._id, title: event.title, capacity: event.capacity },

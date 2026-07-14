@@ -1,6 +1,7 @@
 const Event = require('../models/Event');
 const Reservation = require('../models/Reservation');
 const createNotification = require('../utils/createNotification');
+const createAuditLog = require('../utils/createAuditLog');
 
 const createEvent = async (req, res, next) => {
   try {
@@ -160,6 +161,16 @@ const deleteEvent = async (req, res, next) => {
     
     await Reservation.deleteMany({ event: event._id });
 
+    if (req.user.role === 'admin') {
+      await createAuditLog(
+        req.user._id,
+        'event_deleted',
+        'Event',
+        event._id,
+        `Event "${event.title}" was deleted by an admin.`
+      );
+    }
+
     await event.deleteOne();
 
     res.json({ message: 'Event deleted.' });
@@ -188,6 +199,14 @@ const reviewEvent = async (req, res, next) => {
 
     event.status = decision;
     await event.save();
+
+    await createAuditLog(
+      req.user._id,
+      decision === 'approved' ? 'event_approved' : 'event_rejected',
+      'Event',
+      event._id,
+      `Event "${event.title}" was ${decision}.`
+    );
 
     res.json({ event });
   } catch (err) {
