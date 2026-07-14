@@ -46,7 +46,12 @@ form.addEventListener('submit', async (e) => {
       },
     });
 
-    showMsg('Event updated and sent for admin review.', 'success');
+    showMsg(
+      user.role === 'admin'
+        ? 'Event updated.'
+        : 'Event updated and sent for admin review.',
+      'success'
+    );
 
     setTimeout(() => {
       window.location.href = 'dashboard.html';

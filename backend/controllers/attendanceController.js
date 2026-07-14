@@ -38,6 +38,13 @@ const validateTicket = async (req, res, next) => {
 
 const getEventAttendance = async (req, res, next) => {
   try {
+    const event = await Event.findById(req.params.eventId);
+    if (!event) return res.status(404).json({ message: 'Event not found.' });
+
+    if (req.user.role !== 'admin' && event.organizer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You cannot view attendance for this event.' });
+    }
+
     const records = await Attendance.find({ event: req.params.eventId }).populate('user', 'name email');
     res.json({ attendance: records });
   } catch (err) {

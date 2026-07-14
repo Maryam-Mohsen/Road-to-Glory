@@ -38,7 +38,7 @@ router.post(
   requireApprovedOrganizer,
   createEvent
 );
-router.put('/:id', protect, authorize('organizer'), requireApprovedOrganizer, updateEvent);
+router.put('/:id', protect, authorize('organizer', 'admin'), requireApprovedOrganizer, updateEvent);
 router.delete('/:id', protect, authorize('organizer', 'admin'), deleteEvent);
 
 router.patch(

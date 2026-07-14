@@ -2,6 +2,7 @@ const Event = require('../models/Event');
 const Reservation = require('../models/Reservation');
 const createNotification = require('../utils/createNotification');
 const createAuditLog = require('../utils/createAuditLog');
+const { promoteFromWaitlist } = require('./reservationController');
 
 const createEvent = async (req, res, next) => {
   try {
@@ -42,6 +43,14 @@ if (!Number.isInteger(Number(capacity)) || Number(capacity) < 1 || Number(capaci
       organizer: req.user._id,
     });
 
+    await createAuditLog(
+      req.user._id,
+      'event_created',
+      'Event',
+      event._id,
+      `Event "${event.title}" was created by organizer "${req.user.name}" and is pending approval.`
+    );
+
     res.status(201).json({ event });
   } catch (err) {
     next(err);
@@ -75,7 +84,8 @@ const getEventById = async (req, res, next) => {
   }
 };
 
-const canEditEvent = (user, event) => event.organizer.toString() === user._id.toString();
+const canEditEvent = (user, event) =>
+  user.role === 'admin' || event.organizer.toString() === user._id.toString();
 
 const canDeleteEvent = (user, event) =>
   user.role === 'admin' || event.organizer.toString() === user._id.toString();
@@ -83,11 +93,12 @@ const canDeleteEvent = (user, event) =>
 const updateEvent = async (req, res, next) => {
   try {
     const event = await Event.findById(req.params.id);
-    const wasApproved = event.status === 'approved';
 
     if (!event) {
       return res.status(404).json({ message: 'Event not found.' });
     }
+
+    const wasApproved = event.status === 'approved';
 
     if (!canEditEvent(req.user, event)) {
       return res.status(403).json({ message: 'You cannot manage this event.' });
@@ -101,6 +112,9 @@ const updateEvent = async (req, res, next) => {
       });
     }
 
+    const previousCapacity = event.capacity;
+    const editedByAdmin = req.user.role === 'admin';
+
     Object.assign(event, {
       title: title ?? event.title,
       description: description ?? event.description,
@@ -108,25 +122,56 @@ const updateEvent = async (req, res, next) => {
       location: location ?? event.location,
       date: date ?? event.date,
       capacity: capacity ?? event.capacity,
+      // Only an organizer's edit sends the event back into moderation —
+      // an admin editing it is itself the review, so the status they pass
+      // (or the current one) is kept as-is.
       status: req.user.role === 'organizer' ? 'pending' : (status ?? event.status),
     });
 
     await event.save();
 
-    if (wasApproved) {
-  const reservations = await Reservation.find({
-    event: event._id,
-    status: 'confirmed',
-  });
+    // If capacity went up, pull people off the waitlist to fill the new seats.
+    if (capacity && capacity > previousCapacity) {
+      const newSeats = capacity - previousCapacity;
+      for (let i = 0; i < newSeats; i++) {
+        await promoteFromWaitlist(event._id);
+      }
+    }
 
-  for (const reservation of reservations) {
-    await createNotification(
-      reservation.user,
-      'Event Updated',
-      `The event "${event.title}" has been updated and is waiting for admin approval.`
-    );
-  }
-}
+    if (wasApproved) {
+      const reservations = await Reservation.find({
+        event: event._id,
+        status: 'confirmed',
+      });
+
+      for (const reservation of reservations) {
+        await createNotification(
+          reservation.user,
+          'Event Updated',
+          editedByAdmin
+            ? `The event "${event.title}" was updated by an administrator.`
+            : `The event "${event.title}" has been updated and is waiting for admin approval.`
+        );
+      }
+    }
+
+    if (editedByAdmin) {
+      await createAuditLog(
+        req.user._id,
+        'event_edited',
+        'Event',
+        event._id,
+        `Event "${event.title}" was edited by an admin.`
+      );
+    } else {
+      await createAuditLog(
+        req.user._id,
+        'event_edited',
+        'Event',
+        event._id,
+        `Event "${event.title}" was edited by organizer "${req.user.name}" and sent back for admin review.`
+      );
+    }
 
     res.json({ event });
   } catch (err) {
@@ -155,7 +200,9 @@ const deleteEvent = async (req, res, next) => {
       await createNotification(
         reservation.user,
         'Event Deleted',
-        `The event "${event.title}" has been deleted by the organizer.`
+        req.user.role === 'admin'
+          ? `The event "${event.title}" has been deleted by an administrator.`
+          : `The event "${event.title}" has been deleted by the organizer.`
       );
     }
     
@@ -168,6 +215,14 @@ const deleteEvent = async (req, res, next) => {
         'Event',
         event._id,
         `Event "${event.title}" was deleted by an admin.`
+      );
+    } else {
+      await createAuditLog(
+        req.user._id,
+        'event_deleted',
+        'Event',
+        event._id,
+        `Event "${event.title}" was deleted by organizer "${req.user.name}".`
       );
     }
 

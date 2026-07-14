@@ -35,6 +35,7 @@ async function loadEvents() {
           ${
   user.role === 'admin'
     ? `<div style="margin-top:12px;">
+        <button onclick="window.location.href='edit-event.html?id=${ev._id}'">Edit</button>
         ${
   ev.status === 'pending'
     ? `
@@ -49,11 +50,7 @@ async function loadEvents() {
         <button onclick="reviewEvent('${ev._id}','approved')">Approve</button>
       `
 }
-        ${
-            ev.status === 'rejected'
-              ? `<button onclick="deleteEvent('${ev._id}')">Delete Event</button>`
-              : ''
-        }     
+        <button onclick="deleteEvent('${ev._id}')">Delete Event</button>
         </div>`
     : ''
 }

@@ -63,6 +63,13 @@ const getMyReservations = async (req, res, next) => {
 
 const getEventReservations = async (req, res, next) => {
   try {
+    const event = await Event.findById(req.params.eventId);
+    if (!event) return res.status(404).json({ message: 'Event not found.' });
+
+    if (req.user.role !== 'admin' && event.organizer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You cannot view reservations for this event.' });
+    }
+
     const reservations = await Reservation.find({ event: req.params.eventId })
       .populate('user', 'name email')
       .sort({ createdAt: -1 });

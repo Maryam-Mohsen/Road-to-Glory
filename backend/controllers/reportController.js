@@ -37,6 +37,10 @@ const getEventReport = async (req, res, next) => {
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ message: 'Event not found.' });
 
+    if (req.user.role !== 'admin' && event.organizer.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'You cannot view the report for this event.' });
+    }
+
     const [reservationCount, feedbackStats] = await Promise.all([
       Reservation.countDocuments({ event: eventId, status: 'confirmed' }),
       Feedback.aggregate([
