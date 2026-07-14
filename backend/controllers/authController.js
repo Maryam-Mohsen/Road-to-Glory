@@ -28,7 +28,7 @@ const user = await User.create({
   phone,
   role: allowedRole,
   organizerStatus:
-    allowedRole === 'organizer' ? 'approved' : 'not_applicable',
+    allowedRole === 'organizer' ? 'pending' : 'not_applicable',
 });
     const token = signToken(user);
 

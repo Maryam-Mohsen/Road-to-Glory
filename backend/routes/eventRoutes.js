@@ -9,7 +9,7 @@ const {
   deleteEvent,
   reviewEvent,
 } = require('../controllers/eventController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, requireApprovedOrganizer } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -35,9 +35,10 @@ router.post(
   '/',
   protect,
   authorize('organizer'),
+  requireApprovedOrganizer,
   createEvent
 );
-router.put('/:id', protect, authorize('organizer'), updateEvent);
+router.put('/:id', protect, authorize('organizer'), requireApprovedOrganizer, updateEvent);
 router.delete('/:id', protect, authorize('organizer', 'admin'), deleteEvent);
 
 router.patch(

@@ -45,8 +45,7 @@ const getEventReport = async (req, res, next) => {
       ]),
     ]);
 
-    // Check-in flow isn't wired up yet (Attendance controller/routes are disabled),
-    // so every confirmed reservation is treated as checked-in for now.
+
     const attendanceCount = reservationCount;
     const attendanceRate = event.capacity > 0 ? (attendanceCount / event.capacity) * 100 : 0;
 

@@ -190,6 +190,17 @@ async function loadAllUsers() {
       <td>${u.name}</td>
       <td>${u.username ? '@' + u.username : u.email}</td>
       <td><span class="pill">${u.role}</span></td>
+      <td>
+        ${
+          u.role !== 'organizer'
+            ? '—'
+            : u.organizerStatus === 'pending'
+            ? `<span class="pill">Pending</span>
+               <button onclick="reviewOrganizer('${u._id}', 'approved')">Approve</button>
+               <button class="btn-outline" onclick="reviewOrganizer('${u._id}', 'rejected')">Reject</button>`
+            : `<span class="pill">${u.organizerStatus}</span>`
+        }
+      </td>
       <td>${u.isActive ? 'Active' : 'Deactivated'}</td>
       <td>
         ${
@@ -208,6 +219,16 @@ async function loadAllUsers() {
     </tr>`
     )
     .join('');
+}
+
+async function reviewOrganizer(id, decision) {
+  try {
+    await api(`/users/${id}/review-organizer`, { method: 'PUT', body: { decision } });
+    showMsg(msg, `Organizer ${decision}.`, 'success');
+    loadAllUsers();
+  } catch (err) {
+    showMsg(msg, err.message, 'error');
+  }
 }
 
 async function setUserActive(id, isActive) {
