@@ -37,16 +37,18 @@ const getEventReport = async (req, res, next) => {
     const event = await Event.findById(eventId);
     if (!event) return res.status(404).json({ message: 'Event not found.' });
 
-    const [reservationCount, attendanceCount, feedbackStats] = await Promise.all([
+    const [reservationCount, feedbackStats] = await Promise.all([
       Reservation.countDocuments({ event: eventId, status: 'confirmed' }),
-      Attendance.countDocuments({ event: eventId }),
       Feedback.aggregate([
         { $match: { event: event._id } },
         { $group: { _id: null, avgRating: { $avg: '$rating' }, totalReviews: { $sum: 1 } } },
       ]),
     ]);
 
-    const attendanceRate = reservationCount > 0 ? (attendanceCount / reservationCount) * 100 : 0;
+    // Check-in flow isn't wired up yet (Attendance controller/routes are disabled),
+    // so every confirmed reservation is treated as checked-in for now.
+    const attendanceCount = reservationCount;
+    const attendanceRate = event.capacity > 0 ? (attendanceCount / event.capacity) * 100 : 0;
 
     res.json({
       event: { id: event._id, title: event.title, capacity: event.capacity },
